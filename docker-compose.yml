@@ -7,7 +7,7 @@ services:
       - "3001:3000"
     environment:
       NODE_ENV: production
-      PORT: 3001
+      PORT: 3000
     volumes:
       - kanban-data:/app/data
 
