@@ -168,9 +168,24 @@ function SortableCard({
         <span className="board-card__owner">
           ◌ {card.assigneeName ?? labels.unassigned}
         </span>
-        <span className="board-card__meta">
-          {card.comments.length} {labels.comments}
-        </span>
+        <div className="board-card__footer-actions">
+          <span className="board-card__meta">
+            {card.comments.length} {labels.comments}
+          </span>
+          {canEdit ? (
+            <button
+              className="board-card__edit-button"
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpen(card);
+              }}
+            >
+              {labels.editCard}
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

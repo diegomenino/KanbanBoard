@@ -976,6 +976,25 @@ button {
   gap: 6px;
 }
 
+.board-card__footer-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.board-card__edit-button {
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong);
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1;
+}
+
 .card-editor-backdrop {
   position: fixed;
   inset: 0;
