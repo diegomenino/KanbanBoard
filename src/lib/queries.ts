@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { getDb } from "@/lib/db";
 import type {
   AppUser,
@@ -292,10 +292,15 @@ export function authenticateLocalUser(input: { email: string; password: string }
 
 export async function writeSessionCookie(sessionId: string) {
   const jar = await cookies();
+  const requestHeaders = await headers();
+  const forwardedProto = requestHeaders.get("x-forwarded-proto");
+  const origin = requestHeaders.get("origin");
+  const isHttps = forwardedProto === "https" || origin?.startsWith("https://") === true;
+
   jar.set(SESSION_COOKIE, sessionId, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     path: "/",
     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
   });

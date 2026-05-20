@@ -78,7 +78,6 @@ button {
 }
 
 .marketing-shell,
-.app-layout,
 .page-shell {
   width: min(var(--content-width), calc(100vw - 32px));
   margin: 0 auto;
@@ -345,13 +344,18 @@ button {
 
 .app-frame {
   min-height: 100vh;
+  width: 100%;
 }
 
 .app-layout {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
   display: grid;
   grid-template-columns: 290px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
+  padding: 16px;
 }
 
 .app-sidebar {
@@ -1000,8 +1004,7 @@ button {
 
 @media (max-width: 640px) {
   .marketing-shell,
-  .page-shell,
-  .app-layout {
+  .page-shell {
     width: min(100vw - 24px, 100%);
   }
 
