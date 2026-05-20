@@ -43,6 +43,7 @@ export default async function BoardPage({ params }: BoardPageProps) {
         createCard: dictionary.createCard,
         editCard: dictionary.editCard,
         saveCard: dictionary.saveCard,
+        deleteCard: dictionary.deleteCard,
         cancel: dictionary.cancel,
         cardTitle: dictionary.cardTitle,
         cardDetails: dictionary.cardDetails,

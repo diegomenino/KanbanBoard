@@ -1,5 +1,6 @@
 import {
   addBoardMemberAction,
+  deleteBoardAction,
   removeBoardMemberAction,
   updateBoardMemberRoleAction,
 } from "@/app/actions";
@@ -57,7 +58,7 @@ export default async function BoardSettingsPage({ searchParams }: BoardSettingsP
 
       {!board ? (
         <p style={{ marginTop: "12px" }}>No boards available.</p>
-      ) : board.role !== "ADMIN" ? (
+      ) : board.role !== "ADMIN" && board.ownerUserId !== user.id ? (
         <p style={{ marginTop: "12px" }}>You need board admin access to change these settings.</p>
       ) : (
         <>
@@ -116,6 +117,12 @@ export default async function BoardSettingsPage({ searchParams }: BoardSettingsP
               </article>
             ))}
           </div>
+          <form action={deleteBoardAction} style={{ marginTop: "16px" }}>
+            <input type="hidden" name="boardId" value={board.id} />
+            <button className="ghost-button" type="submit">
+              {dictionary.deleteBoard}
+            </button>
+          </form>
         </>
       )}
     </section>

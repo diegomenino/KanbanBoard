@@ -1,8 +1,11 @@
 "use server";
 
+import fs from "node:fs/promises";
+import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { getDatabasePath, resetDbConnection } from "@/lib/db";
 import {
   approveUser,
   authenticateLocalUser,
@@ -24,6 +27,8 @@ import {
   updateBoardMemberRole,
   updateAuthMode,
   addCardComment,
+  deleteCard,
+  deleteBoard,
   updateCard,
   updateUserPreferences,
   writeSessionCookie,
@@ -470,4 +475,99 @@ export async function removeBoardMemberAction(formData: FormData) {
 
   revalidatePath(`/app/boards/${payload.boardId}`);
   redirect(`/app/boards/${payload.boardId}`);
+}
+
+export async function deleteCardAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const payload = z
+    .object({
+      boardId: z.coerce.number().int().positive(),
+      cardId: z.coerce.number().int().positive(),
+    })
+    .parse({
+      boardId: formData.get("boardId"),
+      cardId: formData.get("cardId"),
+    });
+
+  deleteCard({
+    userId: user.id,
+    role: user.role,
+    boardId: payload.boardId,
+    cardId: payload.cardId,
+  });
+
+  revalidatePath(`/app/boards/${payload.boardId}`);
+  redirect(`/app/boards/${payload.boardId}`);
+}
+
+export async function deleteBoardAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  const payload = z
+    .object({
+      boardId: z.coerce.number().int().positive(),
+    })
+    .parse({
+      boardId: formData.get("boardId"),
+    });
+
+  deleteBoard({
+    userId: user.id,
+    role: user.role,
+    boardId: payload.boardId,
+  });
+
+  revalidatePath("/app", "layout");
+  revalidatePath("/app/board-settings");
+  redirect("/app/board-settings");
+}
+
+export async function restoreBackupAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user || user.role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  const file = formData.get("backup");
+  if (!(file instanceof File) || file.size === 0) {
+    redirect("/app/admin?restore=error");
+  }
+
+  try {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const signature = bytes.subarray(0, 16).toString("utf8");
+    if (signature !== "SQLite format 3\u0000") {
+      redirect("/app/admin?restore=error");
+    }
+
+    const databasePath = getDatabasePath();
+    const tempPath = path.join(path.dirname(databasePath), `restore-${Date.now()}.sqlite`);
+    await fs.writeFile(tempPath, bytes);
+
+    // Validate the uploaded file can be opened as SQLite before replacing live data.
+    const { default: Database } = await import("better-sqlite3");
+    const checkDb = new Database(tempPath, { readonly: true });
+    checkDb.pragma("quick_check");
+    checkDb.close();
+
+    resetDbConnection();
+    await fs.copyFile(tempPath, databasePath);
+    await fs.rm(tempPath, { force: true });
+    await fs.rm(`${databasePath}-wal`, { force: true });
+    await fs.rm(`${databasePath}-shm`, { force: true });
+
+    revalidatePath("/", "layout");
+    revalidatePath("/app", "layout");
+    revalidatePath("/app/admin");
+    redirect("/app/admin?restore=ok");
+  } catch {
+    redirect("/app/admin?restore=error");
+  }
 }

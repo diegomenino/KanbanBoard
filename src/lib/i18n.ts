@@ -7,6 +7,7 @@ type Dictionary = {
   adminSettings: string;
   userSettings: string;
   boardSettings: string;
+  deleteBoard: string;
   boards: string;
   newBoard: string;
   createBoard: string;
@@ -14,6 +15,7 @@ type Dictionary = {
   createCard: string;
   editCard: string;
   saveCard: string;
+  deleteCard: string;
   cancel: string;
   cardTitle: string;
   cardDetails: string;
@@ -56,6 +58,11 @@ type Dictionary = {
   pendingApprovals: string;
   administration: string;
   adminHeadline: string;
+  backupRecovery: string;
+  downloadBackup: string;
+  restoreBackup: string;
+  restoreSuccess: string;
+  restoreError: string;
   totalUsers: string;
   pending: string;
   authenticationMode: string;
@@ -99,6 +106,7 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     adminSettings: "Admin Settings",
     userSettings: "User settings",
     boardSettings: "Board settings",
+    deleteBoard: "Delete board",
     boards: "Boards",
     newBoard: "New board",
     createBoard: "Create board",
@@ -106,6 +114,7 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     createCard: "Create card",
     editCard: "Edit card",
     saveCard: "Save card",
+    deleteCard: "Delete card",
     cancel: "Cancel",
     cardTitle: "Card title",
     cardDetails: "Card details",
@@ -149,6 +158,11 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     pendingApprovals: "Pending approvals",
     administration: "Administration",
     adminHeadline: "Users, auth mode, and card taxonomy.",
+    backupRecovery: "Backup and recovery",
+    downloadBackup: "Download backup",
+    restoreBackup: "Restore backup",
+    restoreSuccess: "Backup restored successfully.",
+    restoreError: "Restore failed. Select a valid backup file.",
     totalUsers: "Total users",
     pending: "Pending",
     authenticationMode: "Authentication mode",
@@ -190,6 +204,7 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     adminSettings: "Configuración admin",
     userSettings: "Configuración de usuario",
     boardSettings: "Configuración del tablero",
+    deleteBoard: "Eliminar tablero",
     boards: "Tableros",
     newBoard: "Nuevo tablero",
     createBoard: "Crear tablero",
@@ -197,6 +212,7 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     createCard: "Crear tarjeta",
     editCard: "Editar tarjeta",
     saveCard: "Guardar tarjeta",
+    deleteCard: "Eliminar tarjeta",
     cancel: "Cancelar",
     cardTitle: "Título de la tarjeta",
     cardDetails: "Detalles de la tarjeta",
@@ -240,6 +256,11 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     pendingApprovals: "Aprobaciones pendientes",
     administration: "Administración",
     adminHeadline: "Usuarios, modo de autenticación y taxonomía de tarjetas.",
+    backupRecovery: "Respaldo y recuperación",
+    downloadBackup: "Descargar respaldo",
+    restoreBackup: "Restaurar respaldo",
+    restoreSuccess: "Respaldo restaurado correctamente.",
+    restoreError: "Falló la restauración. Seleccioná un archivo válido.",
     totalUsers: "Usuarios totales",
     pending: "Pendientes",
     authenticationMode: "Modo de autenticación",

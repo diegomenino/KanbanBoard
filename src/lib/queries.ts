@@ -397,7 +397,7 @@ export function getBoardDetail(boardId: number, userId: number) {
   const db = getDb();
   const board = db
     .prepare(`
-      SELECT b.id, b.name, owner.name AS ownerName, membership.role
+      SELECT b.id, b.name, b.owner_user_id AS ownerUserId, owner.name AS ownerName, membership.role
       FROM boards b
       JOIN users owner ON owner.id = b.owner_user_id
       JOIN board_memberships membership
@@ -405,7 +405,13 @@ export function getBoardDetail(boardId: number, userId: number) {
       WHERE b.id = ?
     `)
     .get(userId, boardId) as
-    | { id: number; name: string; ownerName: string; role: BoardDetail["role"] }
+    | {
+        id: number;
+        name: string;
+        ownerUserId: number;
+        ownerName: string;
+        role: BoardDetail["role"];
+      }
     | undefined;
 
   if (!board) {
@@ -805,6 +811,35 @@ export function addCardComment(input: {
   `).run(input.cardId, input.userId, input.body, now());
 }
 
+export function deleteCard(input: {
+  userId: number;
+  role: SessionUser["role"];
+  boardId: number;
+  cardId: number;
+}) {
+  if (input.role === "READ") {
+    throw new Error("You do not have permission to delete cards.");
+  }
+
+  const db = getDb();
+  const membership = db
+    .prepare(`
+      SELECT role
+      FROM board_memberships
+      WHERE board_id = ? AND user_id = ?
+    `)
+    .get(input.boardId, input.userId) as { role: "ADMIN" | "MEMBER" | "READ" } | undefined;
+
+  if (!membership || membership.role === "READ") {
+    throw new Error("You do not have permission to delete cards on this board.");
+  }
+
+  db.prepare(`
+    DELETE FROM cards
+    WHERE id = ? AND board_id = ?
+  `).run(input.cardId, input.boardId);
+}
+
 export function moveCard(input: {
   boardId: number;
   userId: number;
@@ -1084,4 +1119,45 @@ export function removeBoardMember(input: {
     DELETE FROM board_memberships
     WHERE board_id = ? AND user_id = ?
   `).run(input.boardId, input.userId);
+}
+
+export function deleteBoard(input: {
+  userId: number;
+  role: SessionUser["role"];
+  boardId: number;
+}) {
+  if (input.role === "READ") {
+    throw new Error("You do not have permission to delete boards.");
+  }
+
+  const db = getDb();
+  const board = db
+    .prepare(`
+      SELECT owner_user_id AS ownerUserId
+      FROM boards
+      WHERE id = ?
+    `)
+    .get(input.boardId) as { ownerUserId: number } | undefined;
+
+  if (!board) {
+    throw new Error("Board not found.");
+  }
+
+  const membership = db
+    .prepare(`
+      SELECT role
+      FROM board_memberships
+      WHERE board_id = ? AND user_id = ?
+    `)
+    .get(input.boardId, input.userId) as { role: "ADMIN" | "MEMBER" | "READ" } | undefined;
+
+  const canDelete = board.ownerUserId === input.userId || membership?.role === "ADMIN";
+  if (!canDelete) {
+    throw new Error("Only board owner or board admins can delete the board.");
+  }
+
+  db.prepare(`
+    DELETE FROM boards
+    WHERE id = ?
+  `).run(input.boardId);
 }

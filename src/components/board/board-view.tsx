@@ -22,6 +22,7 @@ import {
   addCommentAction,
   createColumnAction,
   createCardAction,
+  deleteCardAction,
   deleteColumnAction,
   renameColumnAction,
   updateBoardArrangementAction,
@@ -49,6 +50,7 @@ type BoardViewProps = {
     createCard: string;
     editCard: string;
     saveCard: string;
+    deleteCard: string;
     cancel: string;
     cardTitle: string;
     cardDetails: string;
@@ -682,6 +684,13 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
                   {labels.cancel}
                 </button>
               </div>
+            </form>
+            <form action={deleteCardAction} style={{ marginTop: "10px" }}>
+              <input type="hidden" name="boardId" value={board.id} />
+              <input type="hidden" name="cardId" value={editableCard.id} />
+              <button className="secondary-button" type="submit">
+                {labels.deleteCard}
+              </button>
             </form>
             <div className="form-grid" style={{ marginTop: "18px" }}>
               <div className="panel-header">

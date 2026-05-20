@@ -42,6 +42,7 @@ export type BoardColumn = {
 export type BoardDetail = {
   id: number;
   name: string;
+  ownerUserId: number;
   ownerName: string;
   role: UserRole;
   columns: BoardColumn[];

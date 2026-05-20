@@ -3,13 +3,19 @@ import {
   createCardTypeAction,
   deleteUserAction,
   disableUserAction,
+  restoreBackupAction,
   updateAuthModeAction,
 } from "@/app/actions";
 import { getDictionary, translateRole, translateStatus } from "@/lib/i18n";
 import { getAdminDashboard, getSessionUser } from "@/lib/queries";
 
-export default async function AdminPage() {
+type AdminPageProps = {
+  searchParams: Promise<{ restore?: string }>;
+};
+
+export default async function AdminPage({ searchParams }: AdminPageProps) {
   const user = await getSessionUser();
+  const params = await searchParams;
 
   if (!user || user.role !== "ADMIN") {
     return null;
@@ -41,6 +47,43 @@ export default async function AdminPage() {
             <strong>{dashboard.metrics.totalBoards}</strong>
           </article>
         </div>
+      </section>
+
+      <section className="admin-card">
+        <div className="panel-header">
+          <h2>{dictionary.backupRecovery}</h2>
+        </div>
+        {params.restore === "ok" ? (
+          <div className="table-row" style={{ marginTop: "12px" }}>
+            {dictionary.restoreSuccess}
+          </div>
+        ) : null}
+        {params.restore === "error" ? (
+          <div className="table-row" style={{ marginTop: "12px" }}>
+            {dictionary.restoreError}
+          </div>
+        ) : null}
+        <div className="action-row" style={{ marginTop: "16px" }}>
+          <a className="secondary-button" href="/app/admin/backup">
+            {dictionary.downloadBackup}
+          </a>
+        </div>
+        <form
+          action={restoreBackupAction}
+          className="form-grid"
+          style={{ marginTop: "16px" }}
+          encType="multipart/form-data"
+        >
+          <div className="field">
+            <label htmlFor="backup">{dictionary.restoreBackup}</label>
+            <input id="backup" name="backup" type="file" accept=".sqlite,.db,.sqlite3" required />
+          </div>
+          <div className="action-row">
+            <button className="primary-button" type="submit">
+              {dictionary.restoreBackup}
+            </button>
+          </div>
+        </form>
       </section>
 
       <section className="admin-card">

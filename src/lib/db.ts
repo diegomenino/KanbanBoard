@@ -116,3 +116,14 @@ export function getDb() {
 
   return globalThis.__kanbanDb;
 }
+
+export function getDatabasePath() {
+  return databasePath;
+}
+
+export function resetDbConnection() {
+  if (globalThis.__kanbanDb) {
+    globalThis.__kanbanDb.close();
+    globalThis.__kanbanDb = undefined;
+  }
+}
