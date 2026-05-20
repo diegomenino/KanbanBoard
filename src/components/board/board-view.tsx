@@ -17,7 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import {
   addCommentAction,
   createColumnAction,
@@ -38,6 +38,9 @@ type BoardViewProps = {
     owner: string;
     yourRole: string;
     dragToMoveCards: string;
+    scrollColumnsLeft: string;
+    scrollColumnsRight: string;
+    scrollColumnsHint: string;
     readOnlyAccess: string;
     expressLane: string;
     urgentOnly: string;
@@ -300,7 +303,10 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   const [editor, setEditor] = useState<CardEditorState | null>(null);
   const [isExpressCreateOpen, setIsExpressCreateOpen] = useState(false);
   const [isColumnCreateOpen, setIsColumnCreateOpen] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const columnsScrollRef = useRef<HTMLDivElement | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const expressTypes = useMemo(() => board.cardTypes.filter((type) => type.isExpress), [board.cardTypes]);
@@ -316,6 +322,42 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
         .flat()
         .find((card) => card.id === editor.cardId) ?? null
     : null;
+
+  useEffect(() => {
+    const element = columnsScrollRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const updateScrollState = () => {
+      setCanScrollLeft(element.scrollLeft > 8);
+      setCanScrollRight(element.scrollLeft + element.clientWidth < element.scrollWidth - 8);
+    };
+
+    updateScrollState();
+    element.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+
+    return () => {
+      element.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [board.columns.length, columnCards]);
+
+  function scrollColumns(direction: "left" | "right") {
+    const element = columnsScrollRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const distance = Math.max(280, Math.floor(element.clientWidth * 0.72));
+    element.scrollBy({
+      left: direction === "left" ? -distance : distance,
+      behavior: "smooth",
+    });
+  }
 
   function persist(columns: ColumnCards) {
     const cards = buildArrangement(columns);
@@ -593,7 +635,30 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
         onDragStart={(event) => setActiveCardId(Number(event.active.id))}
         onDragEnd={onDragEnd}
       >
-        <div className="board-columns-scroll">
+        <div className="board-columns-toolbar">
+          <p className="board-columns-hint">{labels.scrollColumnsHint}</p>
+          <div className="inline-actions">
+            <button
+              className="board-scroll-button"
+              type="button"
+              aria-label={labels.scrollColumnsLeft}
+              disabled={!canScrollLeft}
+              onClick={() => scrollColumns("left")}
+            >
+              ←
+            </button>
+            <button
+              className="board-scroll-button"
+              type="button"
+              aria-label={labels.scrollColumnsRight}
+              disabled={!canScrollRight}
+              onClick={() => scrollColumns("right")}
+            >
+              →
+            </button>
+          </div>
+        </div>
+        <div ref={columnsScrollRef} className="board-columns-scroll">
           <div className="board-columns board-columns--kanban">
             {board.columns.map((column) => (
               <ColumnDropZone

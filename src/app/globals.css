@@ -740,6 +740,41 @@ button {
   overflow-x: auto;
   overflow-y: visible;
   padding-bottom: 6px;
+  scrollbar-width: thin;
+}
+
+.board-columns-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.board-columns-hint {
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  letter-spacing: -0.12px;
+}
+
+.board-scroll-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline-strong);
+  background: var(--canvas);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.board-scroll-button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .column-card {
@@ -1097,6 +1132,10 @@ button {
     grid-template-columns: 1fr;
     min-width: 0;
     gap: 20px;
+  }
+
+  .board-columns-toolbar {
+    display: none;
   }
 
   .column-card {

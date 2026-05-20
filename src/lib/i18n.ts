@@ -40,6 +40,9 @@ type Dictionary = {
   owner: string;
   yourRole: string;
   dragToMoveCards: string;
+  scrollColumnsLeft: string;
+  scrollColumnsRight: string;
+  scrollColumnsHint: string;
   readOnlyAccess: string;
   expressLane: string;
   urgentOnly: string;
@@ -139,6 +142,9 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     owner: "Owner",
     yourRole: "Your role",
     dragToMoveCards: "Drag to move cards",
+    scrollColumnsLeft: "Scroll columns left",
+    scrollColumnsRight: "Scroll columns right",
+    scrollColumnsHint: "Use the arrows to see the rest of the columns.",
     readOnlyAccess: "Read-only access",
     expressLane: "Express Lane",
     urgentOnly: "Urgent only",
@@ -237,6 +243,9 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     owner: "Propietario",
     yourRole: "Tu rol",
     dragToMoveCards: "Arrastrá para mover tarjetas",
+    scrollColumnsLeft: "Ver columnas hacia la izquierda",
+    scrollColumnsRight: "Ver columnas hacia la derecha",
+    scrollColumnsHint: "Usá las flechas para ver el resto de las columnas.",
     readOnlyAccess: "Acceso solo lectura",
     expressLane: "Carril expreso",
     urgentOnly: "Solo urgentes",
