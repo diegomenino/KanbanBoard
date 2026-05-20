@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/shell/app-sidebar";
+import { ResponsiveAppLayout } from "@/components/shell/responsive-app-layout";
 import { getDictionary } from "@/lib/i18n";
 import { getBoardsForUser, getSessionUser } from "@/lib/queries";
 
@@ -19,26 +20,29 @@ export default async function AppLayout({
 
   return (
     <div className="app-frame">
-      <main className="app-layout">
-        <AppSidebar
-          boards={boards}
-          pathname={pathname}
-          user={user}
-          labels={{
-            appName: dictionary.appName,
-            overview: dictionary.overview,
-            adminSettings: dictionary.adminSettings,
-            userSettings: dictionary.userSettings,
-            boardSettings: dictionary.boardSettings,
-            boards: dictionary.boards,
-            newBoard: dictionary.newBoard,
-            createBoard: dictionary.createBoard,
-            boardName: dictionary.boardName,
-            logOut: dictionary.logOut,
-          }}
-        />
-        <div className="content-stack">{children}</div>
-      </main>
+      <ResponsiveAppLayout
+        sidebar={
+          <AppSidebar
+            boards={boards}
+            pathname={pathname}
+            user={user}
+            labels={{
+              appName: dictionary.appName,
+              overview: dictionary.overview,
+              adminSettings: dictionary.adminSettings,
+              userSettings: dictionary.userSettings,
+              boardSettings: dictionary.boardSettings,
+              boards: dictionary.boards,
+              newBoard: dictionary.newBoard,
+              createBoard: dictionary.createBoard,
+              boardName: dictionary.boardName,
+              logOut: dictionary.logOut,
+            }}
+          />
+        }
+      >
+        {children}
+      </ResponsiveAppLayout>
     </div>
   );
 }

@@ -27,7 +27,7 @@ export function AppSidebar({ boards, pathname, user, labels }: AppSidebarProps) 
     user.role === "ADMIN" ? "Admin" : user.role === "MEMBER" ? "Member" : "Read";
 
   return (
-    <aside className="app-sidebar">
+    <div className="app-sidebar-shell">
       <div className="sidebar-surface">
         <div className="sidebar-brand">
           <p className="sidebar-app-name">{labels.appName}</p>
@@ -136,6 +136,6 @@ export function AppSidebar({ boards, pathname, user, labels }: AppSidebarProps) 
           </form>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }

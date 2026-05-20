@@ -358,10 +358,18 @@ button {
   padding: 16px;
 }
 
+.mobile-topbar {
+  display: none;
+}
+
 .app-sidebar {
   position: sticky;
   top: 16px;
   height: calc(100vh - 32px);
+}
+
+.app-sidebar-shell {
+  height: 100%;
 }
 
 .sidebar-surface {
@@ -984,8 +992,7 @@ button {
 
 @media (max-width: 1068px) {
   .hero-panel,
-  .auth-panel,
-  .app-layout {
+  .auth-panel {
     grid-template-columns: 1fr;
   }
 
@@ -996,16 +1003,67 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .app-sidebar {
-    position: static;
-    height: auto;
+}
+
+@media (max-width: 1199px) and (min-width: 768px) {
+  .app-layout {
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 16px;
+    padding: 12px;
+  }
+
+  .column-card {
+    width: 280px;
+    flex: 0 0 280px;
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .marketing-shell,
   .page-shell {
     width: min(100vw - 24px, 100%);
+  }
+
+  .mobile-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 70;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 12px;
+    background: var(--canvas-parchment);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .app-layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 0 8px 16px;
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 80;
+    width: min(92vw, 360px);
+    height: 100vh;
+    transform: translateX(-105%);
+    transition: transform 140ms ease;
+    padding: 8px;
+  }
+
+  .app-sidebar--mobile-open {
+    transform: translateX(0);
+  }
+
+  .mobile-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 75;
+    border: 0;
+    background: rgba(8, 10, 14, 0.44);
   }
 
   .hero-panel,
