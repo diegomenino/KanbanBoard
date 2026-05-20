@@ -70,18 +70,34 @@ export async function initializeSystemAction(formData: FormData) {
 }
 
 export async function loginAction(formData: FormData) {
+  let payload:
+    | {
+        email: string;
+        password: string;
+      }
+    | undefined;
+
   try {
-    const payload = loginSchema.parse({
+    payload = loginSchema.parse({
       email: formData.get("email"),
       password: formData.get("password"),
     });
-
-    const session = authenticateLocalUser(payload);
-    await writeSessionCookie(session.sessionId);
-    redirect("/app");
   } catch {
     redirect("/login?error=1");
   }
+
+  if (!payload) {
+    redirect("/login?error=1");
+  }
+
+  try {
+    const session = authenticateLocalUser(payload);
+    await writeSessionCookie(session.sessionId);
+  } catch {
+    redirect("/login?error=1");
+  }
+
+  redirect("/app");
 }
 
 export async function signupAction(formData: FormData) {
