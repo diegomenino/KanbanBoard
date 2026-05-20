@@ -28,6 +28,11 @@ type Dictionary = {
   editColumnName: string;
   deleteColumn: string;
   boardAccess: string;
+  boardAccessIntro: string;
+  boardMembers: string;
+  addPerson: string;
+  noAvailableUsers: string;
+  currentAccess: string;
   addUserToBoard: string;
   user: string;
   accessRole: string;
@@ -130,6 +135,11 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     editColumnName: "Edit column name",
     deleteColumn: "Delete column",
     boardAccess: "Board access",
+    boardAccessIntro: "Choose who can see or manage this board.",
+    boardMembers: "People with access",
+    addPerson: "Add person",
+    noAvailableUsers: "Everyone eligible already has access.",
+    currentAccess: "Current access",
     addUserToBoard: "Add user to board",
     user: "User",
     accessRole: "Access role",
@@ -231,6 +241,11 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     editColumnName: "Editar nombre de columna",
     deleteColumn: "Eliminar columna",
     boardAccess: "Acceso al tablero",
+    boardAccessIntro: "Elegí quién puede ver o administrar este tablero.",
+    boardMembers: "Personas con acceso",
+    addPerson: "Agregar persona",
+    noAvailableUsers: "Todas las personas disponibles ya tienen acceso.",
+    currentAccess: "Acceso actual",
     addUserToBoard: "Agregar usuario al tablero",
     user: "Usuario",
     accessRole: "Rol de acceso",
