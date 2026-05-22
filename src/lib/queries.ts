@@ -852,6 +852,8 @@ export function moveCard(input: {
     id: number;
     columnId: number;
     position: number;
+    cardTypeId: number;
+    isExpress: boolean;
   }[];
 }) {
   const board = getDb()
@@ -869,14 +871,30 @@ export function moveCard(input: {
   const db = getDb();
   const update = db.prepare(`
     UPDATE cards
-    SET column_id = ?, position = ?, updated_at = ?
+    SET column_id = ?, position = ?, card_type_id = ?, is_express = ?, updated_at = ?
     WHERE id = ? AND board_id = ?
   `);
   const timestamp = now();
   const transaction = db.transaction(
-    (cards: { id: number; columnId: number; position: number }[]) => {
+    (
+      cards: {
+        id: number;
+        columnId: number;
+        position: number;
+        cardTypeId: number;
+        isExpress: boolean;
+      }[],
+    ) => {
       for (const card of cards) {
-        update.run(card.columnId, card.position, timestamp, card.id, input.boardId);
+        update.run(
+          card.columnId,
+          card.position,
+          card.cardTypeId,
+          card.isExpress ? 1 : 0,
+          timestamp,
+          card.id,
+          input.boardId,
+        );
       }
     },
   );

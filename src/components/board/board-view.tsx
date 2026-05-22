@@ -17,7 +17,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import {
   addCommentAction,
   createColumnAction,
@@ -79,6 +79,9 @@ type CardEditorState = {
   assigneeUserId: string;
   cardTypeId: string;
 };
+type BoardContainerId = `column-${number}` | "express-lane";
+
+const EXPRESS_LANE_ID = "express-lane";
 
 function buildInitialColumns(board: BoardDetail) {
   const result: ColumnCards = {};
@@ -96,32 +99,68 @@ function buildArrangement(columns: ColumnCards) {
       id: card.id,
       columnId: card.columnId,
       position: index + 1,
+      cardTypeId: card.cardTypeId,
+      isExpress: false,
     })),
   );
 }
 
-function findCardColumn(columns: ColumnCards, cardId: number) {
+function buildExpressArrangement(cards: BoardCard[]) {
+  return cards.map((card, index) => ({
+    id: card.id,
+    columnId: card.columnId,
+    position: index + 1,
+    cardTypeId: card.cardTypeId,
+    isExpress: true,
+  }));
+}
+
+function findCardContainer(columns: ColumnCards, expressCards: BoardCard[], cardId: number) {
   for (const [columnId, cards] of Object.entries(columns)) {
     if (cards.some((card) => card.id === cardId)) {
-      return Number(columnId);
+      return `column-${Number(columnId)}` as const;
     }
+  }
+  if (expressCards.some((card) => card.id === cardId)) {
+    return EXPRESS_LANE_ID;
   }
   return null;
 }
 
-function getOverColumnId(overId: string, columns: ColumnCards) {
-  if (overId.startsWith("column-")) {
-    return Number(overId.replace("column-", ""));
+function getOverContainerId(overId: string, columns: ColumnCards, expressCards: BoardCard[]) {
+  if (overId === EXPRESS_LANE_ID) {
+    return EXPRESS_LANE_ID;
   }
-  return findCardColumn(columns, Number(overId));
+  if (overId.startsWith("column-")) {
+    return overId as BoardContainerId;
+  }
+  return findCardContainer(columns, expressCards, Number(overId));
 }
 
 function getOverIndex(overId: string, targetCards: BoardCard[]) {
-  if (overId.startsWith("column-")) {
+  if (overId.startsWith("column-") || overId === EXPRESS_LANE_ID) {
     return targetCards.length;
   }
   const index = targetCards.findIndex((card) => String(card.id) === overId);
   return index === -1 ? targetCards.length : index;
+}
+
+function getCardsForContainer(
+  containerId: BoardContainerId,
+  columns: ColumnCards,
+  expressCards: BoardCard[],
+) {
+  if (containerId === EXPRESS_LANE_ID) {
+    return expressCards;
+  }
+  return columns[Number(containerId.replace("column-", ""))] ?? [];
+}
+
+function normalizeCards(cards: BoardCard[]) {
+  return cards.map((card, index) => ({
+    ...card,
+    position: index + 1,
+  }));
 }
 
 function SortableCard({
@@ -307,8 +346,6 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [editor, setEditor] = useState<CardEditorState | null>(null);
   const [isColumnCreateOpen, setIsColumnCreateOpen] = useState(false);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
   const [isPending, startTransition] = useTransition();
   const columnsScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -317,9 +354,17 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
     () => board.cardTypes.filter((type) => type.isExpress),
     [board.cardTypes],
   );
+  const standardTypes = useMemo(
+    () => board.cardTypes.filter((type) => !type.isExpress),
+    [board.cardTypes],
+  );
   const defaultExpressTypeId = expressTypes[0]?.id ?? "";
+  const defaultStandardTypeId = standardTypes[0]?.id ?? null;
   const defaultColumnId = board.columns[0]?.id ?? null;
   const allVisibleCards = [...Object.values(columnCards).flat(), ...expressCards];
+  const { setNodeRef: setExpressDropRef, isOver: isExpressOver } = useDroppable({
+    id: EXPRESS_LANE_ID,
+  });
   const activeCard = activeCardId
     ? allVisibleCards.find((card) => card.id === activeCardId) ?? null
     : null;
@@ -327,44 +372,8 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
     ? allVisibleCards.find((card) => card.id === editor.cardId) ?? null
     : null;
 
-  useEffect(() => {
-    const element = columnsScrollRef.current;
-
-    if (!element) {
-      return;
-    }
-
-    const updateScrollState = () => {
-      setCanScrollLeft(element.scrollLeft > 8);
-      setCanScrollRight(element.scrollLeft + element.clientWidth < element.scrollWidth - 8);
-    };
-
-    updateScrollState();
-    element.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("resize", updateScrollState);
-
-    return () => {
-      element.removeEventListener("scroll", updateScrollState);
-      window.removeEventListener("resize", updateScrollState);
-    };
-  }, [board.columns.length, columnCards]);
-
-  function scrollColumns(direction: "left" | "right") {
-    const element = columnsScrollRef.current;
-
-    if (!element) {
-      return;
-    }
-
-    const distance = Math.max(280, Math.floor(element.clientWidth * 0.72));
-    element.scrollBy({
-      left: direction === "left" ? -distance : distance,
-      behavior: "smooth",
-    });
-  }
-
-  function persist(columns: ColumnCards) {
-    const cards = buildArrangement(columns);
+  function persist(columns: ColumnCards, express: BoardCard[]) {
+    const cards = [...buildArrangement(columns), ...buildExpressArrangement(express)];
     startTransition(async () => {
       await updateBoardArrangementAction({
         boardId: board.id,
@@ -382,15 +391,15 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
 
     const activeId = Number(event.active.id);
     const overId = String(event.over.id);
-    const sourceColumnId = findCardColumn(columnCards, activeId);
-    const targetColumnId = getOverColumnId(overId, columnCards);
+    const sourceContainerId = findCardContainer(columnCards, expressCards, activeId);
+    const targetContainerId = getOverContainerId(overId, columnCards, expressCards);
 
-    if (!sourceColumnId || !targetColumnId) {
+    if (!sourceContainerId || !targetContainerId) {
       return;
     }
 
-    const sourceCards = columnCards[sourceColumnId];
-    const targetCards = columnCards[targetColumnId];
+    const sourceCards = getCardsForContainer(sourceContainerId, columnCards, expressCards);
+    const targetCards = getCardsForContainer(targetContainerId, columnCards, expressCards);
     const activeIndex = sourceCards.findIndex((card) => card.id === activeId);
 
     if (activeIndex === -1) {
@@ -398,46 +407,89 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
     }
 
     const activeItem = sourceCards[activeIndex];
+    const targetIsExpress = targetContainerId === EXPRESS_LANE_ID;
+    const nextCardTypeId = targetIsExpress
+      ? activeItem.isExpress
+        ? activeItem.cardTypeId
+        : Number(defaultExpressTypeId || 0)
+      : activeItem.isExpress
+        ? defaultStandardTypeId
+        : activeItem.cardTypeId;
 
-    if (sourceColumnId === targetColumnId) {
+    if (!nextCardTypeId) {
+      return;
+    }
+
+    const nextType = board.cardTypes.find((type) => type.id === nextCardTypeId);
+    if (!nextType) {
+      return;
+    }
+
+    const movedCard: BoardCard = {
+      ...activeItem,
+      columnId:
+        targetContainerId === EXPRESS_LANE_ID
+          ? activeItem.columnId
+          : Number(targetContainerId.replace("column-", "")),
+      isExpress: targetIsExpress,
+      cardTypeId: nextCardTypeId,
+      typeName: nextType.name,
+      typeColor: nextType.color,
+    };
+
+    if (sourceContainerId === targetContainerId) {
       const overIndex = getOverIndex(overId, sourceCards);
       if (activeIndex === overIndex) {
         return;
       }
 
-      const reordered = arrayMove(sourceCards, activeIndex, overIndex);
-      const next = {
-        ...columnCards,
-        [sourceColumnId]: reordered.map((card, index) => ({
-          ...card,
-          position: index + 1,
-        })),
-      };
-      setColumnCards(next);
-      persist(next);
+      const reordered = normalizeCards(
+        arrayMove(
+          sourceCards.map((card) => (card.id === activeId ? movedCard : card)),
+          activeIndex,
+          overIndex,
+        ),
+      );
+
+      if (sourceContainerId === EXPRESS_LANE_ID) {
+        setExpressCards(reordered);
+        persist(columnCards, reordered);
+      } else {
+        const sourceColumnId = Number(sourceContainerId.replace("column-", ""));
+        const next = {
+          ...columnCards,
+          [sourceColumnId]: reordered,
+        };
+        setColumnCards(next);
+        persist(next, expressCards);
+      }
       return;
     }
 
-    const nextSource = sourceCards.filter((card) => card.id !== activeId);
+    const nextSource = normalizeCards(sourceCards.filter((card) => card.id !== activeId));
     const insertIndex = getOverIndex(overId, targetCards);
     const nextTarget = [...targetCards];
-    nextTarget.splice(insertIndex, 0, { ...activeItem, columnId: targetColumnId });
+    nextTarget.splice(insertIndex, 0, movedCard);
+    const normalizedTarget = normalizeCards(nextTarget);
 
-    const next = {
-      ...columnCards,
-      [sourceColumnId]: nextSource.map((card, index) => ({
-        ...card,
-        position: index + 1,
-      })),
-      [targetColumnId]: nextTarget.map((card, index) => ({
-        ...card,
-        columnId: targetColumnId,
-        position: index + 1,
-      })),
-    };
+    const nextColumns = { ...columnCards };
+    let nextExpress = expressCards;
 
-    setColumnCards(next);
-    persist(next);
+    if (sourceContainerId === EXPRESS_LANE_ID) {
+      nextExpress = nextSource;
+    } else {
+      nextColumns[Number(sourceContainerId.replace("column-", ""))] = nextSource;
+    }
+
+    if (targetContainerId === EXPRESS_LANE_ID) {
+      nextExpress = normalizedTarget;
+    } else {
+      nextColumns[Number(targetContainerId.replace("column-", ""))] = normalizedTarget;
+    }
+
+    setColumnCards(nextColumns);
+    setExpressCards(nextExpress);
+    persist(nextColumns, nextExpress);
   }
 
   function openEditor(card: BoardCard) {
@@ -557,81 +609,102 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
         </div>
       </div>
 
-      <div className="board-express-lane board-express-lane--compact">
-        <div className="panel-header">
-          <div>
-            <strong>{labels.expressLane}</strong>
-            <p className="board-shell__hint">{labels.urgentOnly}</p>
-          </div>
-          {canEdit && defaultColumnId && expressTypes.length > 0 ? (
-            <form action={createCardAction} className="quick-add-form quick-add-form--express">
-              <input type="hidden" name="boardId" value={board.id} />
-              <input type="hidden" name="columnId" value={defaultColumnId} />
-              <input type="hidden" name="cardTypeId" value={String(defaultExpressTypeId)} />
-              <input id="express-card-title" name="title" placeholder={labels.quickAddTask} required />
-              <button className="quick-add-button" type="submit">
-                + {labels.addTask}
-              </button>
-            </form>
-          ) : null}
-        </div>
-        <div className="board-express-scroll">
-          <div className="board-columns board-columns--express">
-            {expressCards.map((card) => (
-              <SortableCard
-                key={card.id}
-                card={card}
-                labels={labels}
-                canEdit={canEdit}
-                onOpen={openEditor}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="board-columns-actions">
-        <div className="board-shell__hint">{canEdit ? null : labels.readOnlyAccess}</div>
-        {canEdit ? (
-          <details className="column-create" open={isColumnCreateOpen}>
-            <summary
-              className="primary-button"
-              onClick={(event) => {
-                event.preventDefault();
-                setIsColumnCreateOpen((current) => !current);
-              }}
-            >
-              + {labels.addColumn}
-            </summary>
-            <form action={createColumnAction} className="column-create-form" style={{ marginLeft: "auto" }}>
-              <input type="hidden" name="boardId" value={board.id} />
-              <label className="column-create-label" htmlFor="new-column-name">
-                {labels.columnName}
-              </label>
-              <input id="new-column-name" name="name" required />
-              <div className="action-row">
-                <button className="primary-button" type="submit">
-                  {labels.addColumn}
-                </button>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => setIsColumnCreateOpen(false)}
-                >
-                  {labels.cancel}
-                </button>
-              </div>
-            </form>
-          </details>
-        ) : null}
-      </div>
-
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={(event) => setActiveCardId(Number(event.active.id))}
         onDragEnd={onDragEnd}
       >
+        <div className="board-express-lane board-express-lane--compact">
+          <div className="panel-header">
+            <div>
+              <strong>{labels.expressLane}</strong>
+              <p className="board-shell__hint">{labels.urgentOnly}</p>
+            </div>
+            {canEdit && defaultColumnId && expressTypes.length > 0 ? (
+              <form action={createCardAction} className="quick-add-form quick-add-form--express">
+                <input type="hidden" name="boardId" value={board.id} />
+                <input type="hidden" name="columnId" value={defaultColumnId} />
+                <input type="hidden" name="cardTypeId" value={String(defaultExpressTypeId)} />
+                <input
+                  id="express-card-title"
+                  name="title"
+                  placeholder={labels.quickAddTask}
+                  required
+                />
+                <button className="quick-add-button" type="submit">
+                  + {labels.addTask}
+                </button>
+              </form>
+            ) : null}
+          </div>
+          <SortableContext
+            items={expressCards.map((card) => String(card.id))}
+            strategy={rectSortingStrategy}
+          >
+            <div
+              ref={setExpressDropRef}
+              className="board-express-scroll"
+              style={{
+                outline: isExpressOver ? "2px solid rgba(99, 102, 241, 0.24)" : "none",
+                outlineOffset: "6px",
+              }}
+            >
+              <div className="board-columns board-columns--express">
+                {expressCards.map((card) => (
+                  <SortableCard
+                    key={card.id}
+                    card={card}
+                    labels={labels}
+                    canEdit={canEdit}
+                    onOpen={openEditor}
+                  />
+                ))}
+              </div>
+            </div>
+          </SortableContext>
+        </div>
+
+        <div className="board-columns-actions">
+          <div className="board-shell__hint">{canEdit ? null : labels.readOnlyAccess}</div>
+          {canEdit ? (
+            <details className="column-create" open={isColumnCreateOpen}>
+              <summary
+                className="primary-button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setIsColumnCreateOpen((current) => !current);
+                }}
+              >
+                + {labels.addColumn}
+              </summary>
+              <form
+                action={createColumnAction}
+                className="column-create-form"
+                style={{ marginLeft: "auto" }}
+              >
+                <input type="hidden" name="boardId" value={board.id} />
+                <label className="column-create-label" htmlFor="new-column-name">
+                  {labels.columnName}
+                </label>
+                <input id="new-column-name" name="name" required />
+                <div className="action-row">
+                  <button className="primary-button" type="submit">
+                    {labels.addColumn}
+                  </button>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => setIsColumnCreateOpen(false)}
+                  >
+                    {labels.cancel}
+                  </button>
+                </div>
+              </form>
+            </details>
+          ) : null}
+        </div>
+
         <div ref={columnsScrollRef} className="board-columns-scroll">
           <div className="board-columns board-columns--kanban">
             {board.columns.map((column) => (

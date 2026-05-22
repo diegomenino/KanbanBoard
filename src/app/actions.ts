@@ -165,6 +165,8 @@ const boardArrangementSchema = z.object({
       id: z.number(),
       columnId: z.number(),
       position: z.number().int().positive(),
+      cardTypeId: z.number().int().positive(),
+      isExpress: z.boolean(),
     }),
   ),
 });
@@ -225,7 +227,13 @@ const removeBoardAccessSchema = z.object({
 
 export async function updateBoardArrangementAction(input: {
   boardId: number;
-  cards: { id: number; columnId: number; position: number }[];
+  cards: {
+    id: number;
+    columnId: number;
+    position: number;
+    cardTypeId: number;
+    isExpress: boolean;
+  }[];
 }) {
   const user = await getSessionUser();
 
