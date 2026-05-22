@@ -20,7 +20,7 @@ export type BoardCard = {
   cardTypeId: number;
   typeName: string;
   typeColor: string;
-  isExpress: boolean;
+  isUrgent: boolean;
   columnId: number;
   columnName: string;
   position: number;

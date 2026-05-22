@@ -36,6 +36,7 @@ export default async function BoardPage({ params }: BoardPageProps) {
         scrollColumnsHint: dictionary.scrollColumnsHint,
         readOnlyAccess: dictionary.readOnlyAccess,
         expressLane: dictionary.expressLane,
+        urgent: dictionary.urgent,
         urgentOnly: dictionary.urgentOnly,
         dropCardHere: dictionary.dropCardHere,
         assignee: dictionary.assignee,

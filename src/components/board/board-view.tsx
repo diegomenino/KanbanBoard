@@ -43,6 +43,7 @@ type BoardViewProps = {
     scrollColumnsHint: string;
     readOnlyAccess: string;
     expressLane: string;
+    urgent: string;
     urgentOnly: string;
     dropCardHere: string;
     assignee: string;
@@ -87,7 +88,7 @@ function buildInitialColumns(board: BoardDetail) {
   const result: ColumnCards = {};
   for (const column of board.columns) {
     result[column.id] = board.cards
-      .filter((card) => !card.isExpress && card.columnId === column.id)
+      .filter((card) => !card.isUrgent && card.columnId === column.id)
       .sort((left, right) => left.position - right.position);
   }
   return result;
@@ -99,8 +100,7 @@ function buildArrangement(columns: ColumnCards) {
       id: card.id,
       columnId: card.columnId,
       position: index + 1,
-      cardTypeId: card.cardTypeId,
-      isExpress: false,
+      isUrgent: false,
     })),
   );
 }
@@ -110,8 +110,7 @@ function buildExpressArrangement(cards: BoardCard[]) {
     id: card.id,
     columnId: card.columnId,
     position: index + 1,
-    cardTypeId: card.cardTypeId,
-    isExpress: true,
+    isUrgent: true,
   }));
 }
 
@@ -228,8 +227,8 @@ function SortableCard({
       <div className="board-card__chips">
         <span className="board-chip">#{card.position}</span>
         {card.deadline ? <span className="board-chip">{card.deadline}</span> : null}
-        {card.isExpress ? (
-          <span className="board-chip board-chip--urgent">{labels.urgentOnly}</span>
+        {card.isUrgent ? (
+          <span className="board-chip board-chip--urgent">{labels.urgent}</span>
         ) : null}
       </div>
       <div className="board-card__footer">
@@ -340,7 +339,7 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   const [expressCards, setExpressCards] = useState<BoardCard[]>(
     () =>
       board.cards
-        .filter((card) => card.isExpress)
+        .filter((card) => card.isUrgent)
         .sort((left, right) => left.position - right.position),
   );
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
@@ -350,16 +349,6 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   const columnsScrollRef = useRef<HTMLDivElement | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const expressTypes = useMemo(
-    () => board.cardTypes.filter((type) => type.isExpress),
-    [board.cardTypes],
-  );
-  const standardTypes = useMemo(
-    () => board.cardTypes.filter((type) => !type.isExpress),
-    [board.cardTypes],
-  );
-  const defaultExpressTypeId = expressTypes[0]?.id ?? "";
-  const defaultStandardTypeId = standardTypes[0]?.id ?? null;
   const defaultColumnId = board.columns[0]?.id ?? null;
   const allVisibleCards = [...Object.values(columnCards).flat(), ...expressCards];
   const { setNodeRef: setExpressDropRef, isOver: isExpressOver } = useDroppable({
@@ -408,22 +397,6 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
 
     const activeItem = sourceCards[activeIndex];
     const targetIsExpress = targetContainerId === EXPRESS_LANE_ID;
-    const nextCardTypeId = targetIsExpress
-      ? activeItem.isExpress
-        ? activeItem.cardTypeId
-        : Number(defaultExpressTypeId || 0)
-      : activeItem.isExpress
-        ? defaultStandardTypeId
-        : activeItem.cardTypeId;
-
-    if (!nextCardTypeId) {
-      return;
-    }
-
-    const nextType = board.cardTypes.find((type) => type.id === nextCardTypeId);
-    if (!nextType) {
-      return;
-    }
 
     const movedCard: BoardCard = {
       ...activeItem,
@@ -431,10 +404,7 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
         targetContainerId === EXPRESS_LANE_ID
           ? activeItem.columnId
           : Number(targetContainerId.replace("column-", "")),
-      isExpress: targetIsExpress,
-      cardTypeId: nextCardTypeId,
-      typeName: nextType.name,
-      typeColor: nextType.color,
+      isUrgent: targetIsExpress,
     };
 
     if (sourceContainerId === targetContainerId) {
@@ -525,8 +495,8 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
       const deadline = String(formData.get("deadline") ?? "");
       const assigneeUserId = String(formData.get("assigneeUserId") ?? "");
       const cardTypeId = Number(formData.get("cardTypeId"));
+      const isUrgent = formData.get("isUrgent") === "on";
       const selectedType = board.cardTypes.find((type) => type.id === cardTypeId);
-      const shouldBeExpress = Boolean(selectedType?.isExpress);
 
       setColumnCards((current) => {
         const next = { ...current };
@@ -545,11 +515,11 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
                   cardTypeId,
                   typeName: selectedType?.name ?? card.typeName,
                   typeColor: selectedType?.color ?? card.typeColor,
-                  isExpress: shouldBeExpress,
+                  isUrgent,
                 }
               : card,
           );
-          next[Number(columnId)] = shouldBeExpress
+          next[Number(columnId)] = isUrgent
             ? mapped
                 .filter((card) => card.id !== cardId)
                 .map((card, index) => ({
@@ -572,7 +542,7 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
           return current;
         }
 
-        if (!shouldBeExpress) {
+        if (!isUrgent) {
           return current.filter((card) => card.id !== cardId);
         }
 
@@ -587,7 +557,7 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
           cardTypeId,
           typeName: selectedType?.name ?? sourceCard.typeName,
           typeColor: selectedType?.color ?? sourceCard.typeColor,
-          isExpress: true,
+          isUrgent: true,
         };
 
         return [...current.filter((card) => card.id !== cardId), nextCard];
@@ -621,14 +591,14 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
               <strong>{labels.expressLane}</strong>
               <p className="board-shell__hint">{labels.urgentOnly}</p>
             </div>
-            {canEdit && defaultColumnId && expressTypes.length > 0 ? (
-              <form action={createCardAction} className="quick-add-form quick-add-form--express">
-                <input type="hidden" name="boardId" value={board.id} />
-                <input type="hidden" name="columnId" value={defaultColumnId} />
-                <input type="hidden" name="cardTypeId" value={String(defaultExpressTypeId)} />
-                <input
-                  id="express-card-title"
-                  name="title"
+          {canEdit && defaultColumnId ? (
+            <form action={createCardAction} className="quick-add-form quick-add-form--express">
+              <input type="hidden" name="boardId" value={board.id} />
+              <input type="hidden" name="columnId" value={defaultColumnId} />
+              <input type="hidden" name="isUrgent" value="on" />
+              <input
+                id="express-card-title"
+                name="title"
                   placeholder={labels.quickAddTask}
                   required
                 />
@@ -759,6 +729,10 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
                   ))}
                 </select>
               </div>
+              <label className="inline-actions">
+                <input id="edit-is-urgent" name="isUrgent" type="checkbox" defaultChecked={editableCard.isUrgent} />
+                {labels.urgent}
+              </label>
               <div className="field">
                 <label htmlFor="edit-assignee">{labels.assignee}</label>
                 <select

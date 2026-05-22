@@ -170,7 +170,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 <span>
                   {dictionary.color}: {type.color}
                 </span>
-                <span>{type.isExpress ? dictionary.expressEnabled : dictionary.standard}</span>
               </div>
             </article>
           ))}
@@ -184,10 +183,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <label htmlFor="color">{dictionary.color}</label>
             <input id="color" name="color" defaultValue="#1b6dd1" required />
           </div>
-          <label className="inline-actions">
-            <input name="isExpress" type="checkbox" />
-            {dictionary.markExpressCapable}
-          </label>
           <div className="action-row">
             <button className="primary-button" type="submit">
               {dictionary.addCardType}

@@ -86,6 +86,7 @@ function createDatabase() {
       assignee_user_id INTEGER,
       card_type_id INTEGER NOT NULL,
       is_express INTEGER NOT NULL DEFAULT 0,
+      is_urgent INTEGER NOT NULL DEFAULT 0,
       position INTEGER NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -105,6 +106,16 @@ function createDatabase() {
       FOREIGN KEY(author_user_id) REFERENCES users(id) ON DELETE CASCADE
     );
   `);
+
+  const cardColumns = db
+    .prepare("PRAGMA table_info(cards)")
+    .all() as { name: string }[];
+  const hasUrgentColumn = cardColumns.some((column) => column.name === "is_urgent");
+
+  if (!hasUrgentColumn) {
+    db.exec("ALTER TABLE cards ADD COLUMN is_urgent INTEGER NOT NULL DEFAULT 0;");
+    db.exec("UPDATE cards SET is_urgent = is_express;");
+  }
 
   return db;
 }

@@ -103,8 +103,8 @@ function ensureBoardSeed(adminId: number) {
   const insertCard = db.prepare(`
     INSERT INTO cards (
       board_id, column_id, title, details, deadline, assignee_user_id, card_type_id,
-      is_express, position, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      is_express, is_urgent, position, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const urgentCardId = Number(
@@ -116,6 +116,7 @@ function ensureBoardSeed(adminId: number) {
       "2026-05-19",
       adminId,
       typeByName.Urgent,
+      1,
       1,
       1,
       timestamp,
@@ -132,6 +133,7 @@ function ensureBoardSeed(adminId: number) {
     adminId,
     typeByName.Feature,
     0,
+    0,
     2,
     timestamp,
     timestamp,
@@ -146,6 +148,7 @@ function ensureBoardSeed(adminId: number) {
     adminId,
     typeByName.Improvement,
     0,
+    0,
     3,
     timestamp,
     timestamp,
@@ -159,6 +162,7 @@ function ensureBoardSeed(adminId: number) {
     "2026-05-18",
     adminId,
     typeByName.Idea,
+    0,
     0,
     4,
     timestamp,
@@ -444,7 +448,7 @@ export function getBoardDetail(boardId: number, userId: number) {
         assignee.name AS assigneeName,
         type.name AS typeName,
         type.color AS typeColor,
-        c.is_express AS isExpress,
+        c.is_urgent AS isUrgent,
         c.column_id AS columnId,
         col.name AS columnName,
         c.position AS position,
@@ -454,7 +458,7 @@ export function getBoardDetail(boardId: number, userId: number) {
       JOIN board_columns col ON col.id = c.column_id
       LEFT JOIN users assignee ON assignee.id = c.assignee_user_id
       WHERE c.board_id = ?
-      ORDER BY c.is_express DESC, c.position ASC, c.updated_at DESC
+      ORDER BY c.is_urgent DESC, c.position ASC, c.updated_at DESC
     `)
     .all(boardId) as BoardDetail["cards"];
 
@@ -526,7 +530,7 @@ export function getBoardDetail(boardId: number, userId: number) {
     columns,
     cards: cards.map((card) => ({
       ...card,
-      isExpress: Boolean(card.isExpress),
+      isUrgent: Boolean(card.isUrgent),
       comments: comments
         .filter((comment) => comment.cardId === card.id)
         .map((comment) => ({
@@ -649,6 +653,7 @@ export function createCard(input: {
   columnId: number;
   title: string;
   cardTypeId?: number;
+  isUrgent: boolean;
 }) {
   if (input.role === "READ") {
     throw new Error("You do not have permission to create cards.");
@@ -670,21 +675,21 @@ export function createCard(input: {
   const selectedType = input.cardTypeId
     ? ((db
         .prepare(`
-          SELECT id, is_express AS isExpress
+          SELECT id
           FROM card_types
           WHERE id = ?
         `)
-        .get(input.cardTypeId) as { id: number; isExpress: number } | undefined) ?? null)
+        .get(input.cardTypeId) as { id: number } | undefined) ?? null)
     : null;
 
   const fallbackType = db
     .prepare(`
-      SELECT id, is_express AS isExpress
+      SELECT id
       FROM card_types
       WHERE name = 'Feature'
       LIMIT 1
     `)
-    .get() as { id: number; isExpress: number } | undefined;
+    .get() as { id: number } | undefined;
 
   const cardType = selectedType ?? fallbackType;
 
@@ -692,7 +697,7 @@ export function createCard(input: {
     throw new Error("Default card type is missing.");
   }
 
-  const isExpress = cardType.isExpress ? 1 : 0;
+  const isUrgent = input.isUrgent ? 1 : 0;
 
   const nextPosition =
     (
@@ -700,9 +705,9 @@ export function createCard(input: {
         .prepare(`
           SELECT COALESCE(MAX(position), 0) AS maxPosition
           FROM cards
-          WHERE board_id = ? AND column_id = ? AND is_express = ?
+          WHERE board_id = ? AND column_id = ? AND is_urgent = ?
         `)
-        .get(input.boardId, input.columnId, isExpress) as { maxPosition: number }
+        .get(input.boardId, input.columnId, isUrgent) as { maxPosition: number }
     ).maxPosition + 1;
 
   const timestamp = now();
@@ -717,17 +722,19 @@ export function createCard(input: {
       assignee_user_id,
       card_type_id,
       is_express,
+      is_urgent,
       position,
       created_at,
       updated_at
-    ) VALUES (?, ?, ?, '', NULL, ?, ?, ?, ?, ?, ?)
+    ) VALUES (?, ?, ?, '', NULL, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     input.boardId,
     input.columnId,
     input.title,
     input.userId,
     cardType.id,
-    isExpress,
+    0,
+    isUrgent,
     nextPosition,
     timestamp,
     timestamp,
@@ -744,6 +751,7 @@ export function updateCard(input: {
   deadline: string | null;
   assigneeUserId: number | null;
   cardTypeId: number;
+  isUrgent: boolean;
 }) {
   if (input.role === "READ") {
     throw new Error("You do not have permission to edit cards.");
@@ -764,11 +772,11 @@ export function updateCard(input: {
 
   const cardType = db
     .prepare(`
-      SELECT id, is_express AS isExpress
+      SELECT id
       FROM card_types
       WHERE id = ?
     `)
-    .get(input.cardTypeId) as { id: number; isExpress: number } | undefined;
+    .get(input.cardTypeId) as { id: number } | undefined;
 
   if (!cardType) {
     throw new Error("Card type not found.");
@@ -776,7 +784,7 @@ export function updateCard(input: {
 
   db.prepare(`
     UPDATE cards
-    SET title = ?, details = ?, deadline = ?, assignee_user_id = ?, card_type_id = ?, is_express = ?, updated_at = ?
+    SET title = ?, details = ?, deadline = ?, assignee_user_id = ?, card_type_id = ?, is_urgent = ?, updated_at = ?
     WHERE id = ? AND board_id = ?
   `).run(
     input.title,
@@ -784,7 +792,7 @@ export function updateCard(input: {
     input.deadline,
     input.assigneeUserId,
     input.cardTypeId,
-    cardType.isExpress ? 1 : 0,
+    input.isUrgent ? 1 : 0,
     now(),
     input.cardId,
     input.boardId,
@@ -852,8 +860,7 @@ export function moveCard(input: {
     id: number;
     columnId: number;
     position: number;
-    cardTypeId: number;
-    isExpress: boolean;
+    isUrgent: boolean;
   }[];
 }) {
   const board = getDb()
@@ -871,7 +878,7 @@ export function moveCard(input: {
   const db = getDb();
   const update = db.prepare(`
     UPDATE cards
-    SET column_id = ?, position = ?, card_type_id = ?, is_express = ?, updated_at = ?
+    SET column_id = ?, position = ?, is_urgent = ?, updated_at = ?
     WHERE id = ? AND board_id = ?
   `);
   const timestamp = now();
@@ -881,16 +888,14 @@ export function moveCard(input: {
         id: number;
         columnId: number;
         position: number;
-        cardTypeId: number;
-        isExpress: boolean;
+        isUrgent: boolean;
       }[],
     ) => {
       for (const card of cards) {
         update.run(
           card.columnId,
           card.position,
-          card.cardTypeId,
-          card.isExpress ? 1 : 0,
+          card.isUrgent ? 1 : 0,
           timestamp,
           card.id,
           input.boardId,
@@ -995,7 +1000,7 @@ export function deleteBoardColumn(input: {
       FROM (
         SELECT id, ROW_NUMBER() OVER (ORDER BY position, id) AS next_position
         FROM cards
-        WHERE board_id = ? AND column_id = ? AND is_express = 0
+        WHERE board_id = ? AND column_id = ? AND is_urgent = 0
       ) AS sorted
       WHERE cards.id = sorted.id
     `).run(input.boardId, fallback.id);

@@ -56,6 +56,7 @@ type Dictionary = {
   scrollColumnsHint: string;
   readOnlyAccess: string;
   expressLane: string;
+  urgent: string;
   urgentOnly: string;
   dropCardHere: string;
   assignee: string;
@@ -169,6 +170,7 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     scrollColumnsHint: "Use the arrows to see the rest of the columns.",
     readOnlyAccess: "Read-only access",
     expressLane: "Express Lane",
+    urgent: "Urgent",
     urgentOnly: "Urgent only",
     dropCardHere: "Drop a card here",
     assignee: "Assignee",
@@ -281,6 +283,7 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
     scrollColumnsHint: "Usá las flechas para ver el resto de las columnas.",
     readOnlyAccess: "Acceso solo lectura",
     expressLane: "Carril expreso",
+    urgent: "Urgente",
     urgentOnly: "Solo urgentes",
     dropCardHere: "Soltá una tarjeta acá",
     assignee: "Asignado",

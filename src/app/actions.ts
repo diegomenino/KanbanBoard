@@ -165,8 +165,7 @@ const boardArrangementSchema = z.object({
       id: z.number(),
       columnId: z.number(),
       position: z.number().int().positive(),
-      cardTypeId: z.number().int().positive(),
-      isExpress: z.boolean(),
+      isUrgent: z.boolean(),
     }),
   ),
 });
@@ -180,6 +179,7 @@ const createCardSchema = z.object({
   columnId: z.coerce.number().int().positive(),
   title: z.string().min(2).max(160),
   cardTypeId: z.coerce.number().int().positive().optional(),
+  isUrgent: z.boolean().optional(),
 });
 
 const updateCardSchema = z.object({
@@ -190,6 +190,7 @@ const updateCardSchema = z.object({
   deadline: z.string().optional(),
   assigneeUserId: z.coerce.number().int().positive().nullable(),
   cardTypeId: z.coerce.number().int().positive(),
+  isUrgent: z.boolean().optional(),
 });
 
 const addCommentSchema = z.object({
@@ -231,8 +232,7 @@ export async function updateBoardArrangementAction(input: {
     id: number;
     columnId: number;
     position: number;
-    cardTypeId: number;
-    isExpress: boolean;
+    isUrgent: boolean;
   }[];
 }) {
   const user = await getSessionUser();
@@ -294,6 +294,7 @@ export async function createCardAction(formData: FormData) {
       formData.get("cardTypeId") && String(formData.get("cardTypeId")).trim() !== ""
         ? formData.get("cardTypeId")
         : undefined,
+    isUrgent: formData.get("isUrgent") === "on",
   });
 
   createCard({
@@ -303,6 +304,7 @@ export async function createCardAction(formData: FormData) {
     columnId: payload.columnId,
     title: payload.title,
     cardTypeId: payload.cardTypeId,
+    isUrgent: payload.isUrgent ?? false,
   });
 
   revalidatePath(`/app/boards/${payload.boardId}`);
@@ -331,6 +333,7 @@ export async function updateCardAction(formData: FormData) {
         ? formData.get("assigneeUserId")
         : null,
     cardTypeId: formData.get("cardTypeId"),
+    isUrgent: formData.get("isUrgent") === "on",
   });
 
   updateCard({
@@ -343,6 +346,7 @@ export async function updateCardAction(formData: FormData) {
     deadline: payload.deadline ? payload.deadline : null,
     assigneeUserId: payload.assigneeUserId,
     cardTypeId: payload.cardTypeId,
+    isUrgent: payload.isUrgent ?? false,
   });
 
   revalidatePath(`/app/boards/${payload.boardId}`);
