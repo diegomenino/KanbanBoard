@@ -15,24 +15,37 @@ export default async function AppHomePage() {
 
   return (
     <>
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <p className="eyebrow">{dictionary.workspaceOverview}</p>
-            <h1>{dictionary.keepNextActionObvious}</h1>
-          </div>
+      <section className="overview-hero">
+        <div className="overview-hero__copy">
+          <p className="eyebrow">{dictionary.workspaceOverview}</p>
+          <h1>{dictionary.keepNextActionObvious}</h1>
+          <p className="hero-text">{dictionary.baselineSummary}</p>
         </div>
-        <p className="hero-text">{dictionary.baselineSummary}</p>
+        <div className="overview-hero__stats">
+          <article className="metric-card">
+            <p className="eyebrow">{dictionary.boards}</p>
+            <strong>{boards.length}</strong>
+            <span>{dictionary.workspaceVisibility}</span>
+          </article>
+          <article className="metric-card">
+            <p className="eyebrow">{dictionary.role}</p>
+            <strong>{translateRole(user.role, user.preferenceLanguage)}</strong>
+            <span>{dictionary.accountEmail}: {user.email}</span>
+          </article>
+        </div>
       </section>
 
       <section className="panel">
         <div className="panel-header">
           <h2>{dictionary.yourBoards}</h2>
         </div>
-        <div className="form-grid" style={{ marginTop: "16px" }}>
+        <div className="board-summary-grid" style={{ marginTop: "16px" }}>
           {boards.map((board) => (
-            <Link key={board.id} className="table-row" href={`/app/boards/${board.id}`}>
-              <strong>{board.name}</strong>
+            <Link key={board.id} className="board-summary-card" href={`/app/boards/${board.id}`}>
+              <div className="board-summary-card__top">
+                <strong>{board.name}</strong>
+                <span className="status-pill">{translateRole(board.role, user.preferenceLanguage)}</span>
+              </div>
               <span>
                 {dictionary.owner}: {board.ownerName}
               </span>

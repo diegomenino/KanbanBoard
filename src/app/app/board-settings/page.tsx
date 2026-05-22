@@ -61,69 +61,81 @@ export default async function BoardSettingsPage({ searchParams }: BoardSettingsP
       ) : board.role !== "ADMIN" && board.ownerUserId !== user.id ? (
         <p style={{ marginTop: "12px" }}>You need board admin access to change these settings.</p>
       ) : (
-        <>
-          <form action={addBoardMemberAction} className="form-grid" style={{ marginTop: "12px" }}>
-            <input type="hidden" name="boardId" value={board.id} />
-            <div className="field">
-              <label htmlFor="board-access-user">{dictionary.user}</label>
-              <select id="board-access-user" name="userId" required>
-                <option value="">{dictionary.addUserToBoard}</option>
-                {board.availableUsers.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.name} ({candidate.email})
-                  </option>
-                ))}
-              </select>
+        <div className="board-access-stack" style={{ marginTop: "12px" }}>
+          <section className="board-access-card">
+            <div className="board-access-card__header">
+              <strong>{dictionary.addPerson}</strong>
             </div>
-            <div className="field">
-              <label htmlFor="board-access-role">{dictionary.accessRole}</label>
-              <select id="board-access-role" name="role" defaultValue="MEMBER">
-                <option value="ADMIN">Admin</option>
-                <option value="MEMBER">Member</option>
-                <option value="READ">Read</option>
-              </select>
-            </div>
-            <div className="action-row">
+            <form action={addBoardMemberAction} className="board-access-form">
+              <input type="hidden" name="boardId" value={board.id} />
+              <div className="field">
+                <label htmlFor="board-access-user">{dictionary.user}</label>
+                <select id="board-access-user" name="userId" required>
+                  <option value="">{dictionary.addUserToBoard}</option>
+                  {board.availableUsers.map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.name} ({candidate.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label htmlFor="board-access-role">{dictionary.accessRole}</label>
+                <select id="board-access-role" name="role" defaultValue="MEMBER">
+                  <option value="ADMIN">Admin</option>
+                  <option value="MEMBER">Member</option>
+                  <option value="READ">Read</option>
+                </select>
+              </div>
               <button className="primary-button" type="submit">
                 {dictionary.grantAccess}
               </button>
-            </div>
-          </form>
+            </form>
+          </section>
 
-          <div className="form-grid" style={{ marginTop: "12px" }}>
-            {board.memberships.map((membership) => (
-              <article key={membership.userId} className="table-row">
-                <strong>{membership.name}</strong>
-                <p>{membership.email}</p>
-                <form action={updateBoardMemberRoleAction} className="inline-actions">
-                  <input type="hidden" name="boardId" value={board.id} />
-                  <input type="hidden" name="userId" value={membership.userId} />
-                  <select name="role" defaultValue={membership.role}>
-                    <option value="ADMIN">Admin</option>
-                    <option value="MEMBER">Member</option>
-                    <option value="READ">Read</option>
-                  </select>
-                  <button className="secondary-button" type="submit">
-                    {dictionary.updateAccess}
-                  </button>
-                </form>
-                <form action={removeBoardMemberAction}>
-                  <input type="hidden" name="boardId" value={board.id} />
-                  <input type="hidden" name="userId" value={membership.userId} />
-                  <button className="ghost-button" type="submit">
-                    {dictionary.removeAccess}
-                  </button>
-                </form>
-              </article>
-            ))}
-          </div>
-          <form action={deleteBoardAction} style={{ marginTop: "16px" }}>
+          <section className="board-access-card">
+            <div className="board-access-card__header">
+              <strong>{dictionary.boardMembers}</strong>
+            </div>
+            <div className="board-member-list">
+              {board.memberships.map((membership) => (
+                <article key={membership.userId} className="board-member-row">
+                  <div className="board-member-row__identity">
+                    <strong>{membership.name}</strong>
+                    <p>{membership.email}</p>
+                  </div>
+                  <div className="board-member-row__actions">
+                    <form action={updateBoardMemberRoleAction} className="board-member-role-form">
+                      <input type="hidden" name="boardId" value={board.id} />
+                      <input type="hidden" name="userId" value={membership.userId} />
+                      <select name="role" defaultValue={membership.role}>
+                        <option value="ADMIN">Admin</option>
+                        <option value="MEMBER">Member</option>
+                        <option value="READ">Read</option>
+                      </select>
+                      <button className="secondary-button" type="submit">
+                        {dictionary.updateAccess}
+                      </button>
+                    </form>
+                    <form action={removeBoardMemberAction}>
+                      <input type="hidden" name="boardId" value={board.id} />
+                      <input type="hidden" name="userId" value={membership.userId} />
+                      <button className="ghost-button" type="submit">
+                        {dictionary.removeAccess}
+                      </button>
+                    </form>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+          <form action={deleteBoardAction}>
             <input type="hidden" name="boardId" value={board.id} />
             <button className="ghost-button" type="submit">
               {dictionary.deleteBoard}
             </button>
           </form>
-        </>
+        </div>
       )}
     </section>
   );

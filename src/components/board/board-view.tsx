@@ -51,6 +51,8 @@ type BoardViewProps = {
     roleText: string;
     newCard: string;
     createCard: string;
+    addTask: string;
+    quickAddTask: string;
     editCard: string;
     saveCard: string;
     deleteCard: string;
@@ -133,8 +135,15 @@ function SortableCard({
   canEdit: boolean;
   onOpen: (card: BoardCard) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: String(card.id) });
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: String(card.id) });
 
   return (
     <article
@@ -143,31 +152,49 @@ function SortableCard({
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        opacity: isDragging ? 0.4 : 1,
+        opacity: isDragging ? 0.45 : 1,
       }}
-      onDoubleClick={() => {
-        if (canEdit) {
-          onOpen(card);
-        }
-      }}
-      {...attributes}
-      {...listeners}
     >
       <div className="board-card__topline">
-        <span className="board-card__circle">◌</span>
-        <span className="board-card__type">{card.typeName}</span>
+        <span
+          className="board-card__type"
+          style={{ backgroundColor: `${card.typeColor}14`, color: card.typeColor }}
+        >
+          {card.typeName}
+        </span>
+        {canEdit ? (
+          <button
+            ref={setActivatorNodeRef}
+            className="board-card__drag"
+            type="button"
+            aria-label={labels.dragToMoveCards}
+            {...attributes}
+            {...listeners}
+          >
+            ≡
+          </button>
+        ) : null}
       </div>
-      <strong className="board-card__title">{card.title}</strong>
-      <p className="board-card__details">{card.details}</p>
+      {canEdit ? (
+        <button className="board-card__open" type="button" onClick={() => onOpen(card)}>
+          <strong className="board-card__title">{card.title}</strong>
+          <p className="board-card__details">{card.details || "No details yet."}</p>
+        </button>
+      ) : (
+        <div className="board-card__open board-card__open--static">
+          <strong className="board-card__title">{card.title}</strong>
+          <p className="board-card__details">{card.details || "No details yet."}</p>
+        </div>
+      )}
       <div className="board-card__chips">
-        <span className="board-chip">{card.position}</span>
+        <span className="board-chip">#{card.position}</span>
         {card.deadline ? <span className="board-chip">{card.deadline}</span> : null}
-        {card.isExpress ? <span className="board-chip board-chip--urgent">{labels.urgentOnly}</span> : null}
+        {card.isExpress ? (
+          <span className="board-chip board-chip--urgent">{labels.urgentOnly}</span>
+        ) : null}
       </div>
       <div className="board-card__footer">
-        <span className="board-card__owner">
-          ◌ {card.assigneeName ?? labels.unassigned}
-        </span>
+        <span className="board-card__owner">{card.assigneeName ?? labels.unassigned}</span>
         <span className="board-card__meta">
           {card.comments.length} {labels.comments}
         </span>
@@ -194,7 +221,6 @@ function ColumnDropZone({
   onOpenCard: (card: BoardCard) => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: `column-${columnId}` });
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   return (
     <section className="column-card">
@@ -203,64 +229,28 @@ function ColumnDropZone({
           <h3 className="column-card__title">{title}</h3>
           <span className="column-card__count">{cards.length}</span>
         </div>
-        <div className="inline-actions">
-          {canEdit ? (
-            <details className="column-create" open={isCreateOpen}>
-              <summary
-                className="column-plus"
-                aria-label={labels.newCard}
-                onClick={(event) => {
-                  event.preventDefault();
-                  setIsCreateOpen((current) => !current);
-                }}
-              >
-                +
-              </summary>
-              <form action={createCardAction} className="column-create-form">
+        {canEdit ? (
+          <details className="column-menu-details">
+            <summary className="column-menu" aria-label="Column menu">
+              ...
+            </summary>
+            <div className="column-menu-popover">
+              <form action={renameColumnAction} className="column-menu-form">
                 <input type="hidden" name="boardId" value={boardId} />
                 <input type="hidden" name="columnId" value={columnId} />
-                <label className="column-create-label" htmlFor={`card-title-${columnId}`}>
-                  {labels.cardTitle}
-                </label>
-                <input id={`card-title-${columnId}`} name="title" required />
-                <div className="action-row">
-                  <button className="primary-button" type="submit">
-                    {labels.createCard}
-                  </button>
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={() => setIsCreateOpen(false)}
-                  >
-                    {labels.cancel}
-                  </button>
-                </div>
+                <input name="name" defaultValue={title} required />
+                <button type="submit">{labels.editColumnName}</button>
               </form>
-            </details>
-          ) : null}
-          {canEdit ? (
-            <details className="column-menu-details">
-              <summary className="column-menu" aria-label="Column menu">
-                ...
-              </summary>
-              <div className="column-menu-popover">
-                <form action={renameColumnAction} className="column-menu-form">
-                  <input type="hidden" name="boardId" value={boardId} />
-                  <input type="hidden" name="columnId" value={columnId} />
-                  <input name="name" defaultValue={title} required />
-                  <button type="submit">{labels.editColumnName}</button>
-                </form>
-                <form action={deleteColumnAction}>
-                  <input type="hidden" name="boardId" value={boardId} />
-                  <input type="hidden" name="columnId" value={columnId} />
-                  <button type="submit" className="column-menu-delete">
-                    {labels.deleteColumn}
-                  </button>
-                </form>
-              </div>
-            </details>
-          ) : null}
-        </div>
+              <form action={deleteColumnAction}>
+                <input type="hidden" name="boardId" value={boardId} />
+                <input type="hidden" name="columnId" value={columnId} />
+                <button type="submit" className="column-menu-delete">
+                  {labels.deleteColumn}
+                </button>
+              </form>
+            </div>
+          </details>
+        ) : null}
       </div>
       <SortableContext items={cards.map((card) => String(card.id))} strategy={rectSortingStrategy}>
         <div
@@ -268,7 +258,7 @@ function ColumnDropZone({
           className="form-grid board-column-dropzone"
           style={{
             marginTop: "14px",
-            outline: isOver ? "2px solid rgba(12, 124, 89, 0.28)" : "none",
+            outline: isOver ? "2px solid rgba(99, 102, 241, 0.24)" : "none",
             outlineOffset: "6px",
           }}
         >
@@ -285,6 +275,21 @@ function ColumnDropZone({
               />
             ))
           )}
+          {canEdit ? (
+            <form action={createCardAction} className="quick-add-form">
+              <input type="hidden" name="boardId" value={boardId} />
+              <input type="hidden" name="columnId" value={columnId} />
+              <input
+                id={`card-title-${columnId}`}
+                name="title"
+                placeholder={labels.quickAddTask}
+                required
+              />
+              <button className="quick-add-button" type="submit">
+                + {labels.addTask}
+              </button>
+            </form>
+          ) : null}
         </div>
       </SortableContext>
     </section>
@@ -301,7 +306,6 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   );
   const [activeCardId, setActiveCardId] = useState<number | null>(null);
   const [editor, setEditor] = useState<CardEditorState | null>(null);
-  const [isExpressCreateOpen, setIsExpressCreateOpen] = useState(false);
   const [isColumnCreateOpen, setIsColumnCreateOpen] = useState(false);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -309,18 +313,18 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   const columnsScrollRef = useRef<HTMLDivElement | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const expressTypes = useMemo(() => board.cardTypes.filter((type) => type.isExpress), [board.cardTypes]);
+  const expressTypes = useMemo(
+    () => board.cardTypes.filter((type) => type.isExpress),
+    [board.cardTypes],
+  );
   const defaultExpressTypeId = expressTypes[0]?.id ?? "";
   const defaultColumnId = board.columns[0]?.id ?? null;
+  const allVisibleCards = [...Object.values(columnCards).flat(), ...expressCards];
   const activeCard = activeCardId
-    ? Object.values(columnCards)
-        .flat()
-        .find((card) => card.id === activeCardId) ?? null
+    ? allVisibleCards.find((card) => card.id === activeCardId) ?? null
     : null;
   const editableCard = editor
-    ? Object.values(columnCards)
-        .flat()
-        .find((card) => card.id === editor.cardId) ?? null
+    ? allVisibleCards.find((card) => card.id === editor.cardId) ?? null
     : null;
 
   useEffect(() => {
@@ -437,6 +441,10 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   }
 
   function openEditor(card: BoardCard) {
+    if (!canEdit) {
+      return;
+    }
+
     setEditor({
       cardId: card.id,
       title: card.title,
@@ -452,6 +460,10 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
   }
 
   function onEditSubmit(formData: FormData) {
+    if (!canEdit) {
+      return;
+    }
+
     startTransition(async () => {
       await updateCardAction(formData);
 
@@ -486,39 +498,48 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
               : card,
           );
           next[Number(columnId)] = shouldBeExpress
-            ? mapped.filter((card) => card.id !== cardId).map((card, index) => ({
-                ...card,
-                position: index + 1,
-              }))
+            ? mapped
+                .filter((card) => card.id !== cardId)
+                .map((card, index) => ({
+                  ...card,
+                  position: index + 1,
+                }))
             : mapped;
         }
         return next;
       });
 
-      if (shouldBeExpress) {
-        setExpressCards((current) => {
-          const inColumns = Object.values(columnCards)
+      setExpressCards((current) => {
+        const sourceCard =
+          current.find((card) => card.id === cardId) ??
+          Object.values(columnCards)
             .flat()
             .find((card) => card.id === cardId);
-          if (!inColumns) {
-            return current;
-          }
-          const nextCard: BoardCard = {
-            ...inColumns,
-            title,
-            details,
-            deadline: deadline || null,
-            assigneeUserId: assigneeUserId ? Number(assigneeUserId) : null,
-            assigneeName:
-              board.members.find((member) => String(member.id) === assigneeUserId)?.name ?? null,
-            cardTypeId,
-            typeName: selectedType?.name ?? inColumns.typeName,
-            typeColor: selectedType?.color ?? inColumns.typeColor,
-            isExpress: true,
-          };
-          return [...current.filter((card) => card.id !== cardId), nextCard];
-        });
-      }
+
+        if (!sourceCard) {
+          return current;
+        }
+
+        if (!shouldBeExpress) {
+          return current.filter((card) => card.id !== cardId);
+        }
+
+        const nextCard: BoardCard = {
+          ...sourceCard,
+          title,
+          details,
+          deadline: deadline || null,
+          assigneeUserId: assigneeUserId ? Number(assigneeUserId) : null,
+          assigneeName:
+            board.members.find((member) => String(member.id) === assigneeUserId)?.name ?? null,
+          cardTypeId,
+          typeName: selectedType?.name ?? sourceCard.typeName,
+          typeColor: selectedType?.color ?? sourceCard.typeColor,
+          isExpress: true,
+        };
+
+        return [...current.filter((card) => card.id !== cardId), nextCard];
+      });
 
       setEditor(null);
     });
@@ -556,7 +577,11 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
                   <button className="primary-button" type="submit">
                     {labels.addColumn}
                   </button>
-                  <button className="ghost-button" type="button" onClick={() => setIsColumnCreateOpen(false)}>
+                  <button
+                    className="ghost-button"
+                    type="button"
+                    onClick={() => setIsColumnCreateOpen(false)}
+                  >
                     {labels.cancel}
                   </button>
                 </div>
@@ -570,62 +595,34 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
 
       <div className="board-express-lane board-express-lane--compact">
         <div className="panel-header">
-          <strong>{labels.expressLane}</strong>
-          <div className="inline-actions">
-            <span className="status-pill status-pill--urgent">{labels.urgentOnly}</span>
-            {canEdit && defaultColumnId && expressTypes.length > 0 ? (
-              <details className="column-create" open={isExpressCreateOpen}>
-                <summary
-                  className="column-plus"
-                  aria-label={labels.newCard}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    setIsExpressCreateOpen((current) => !current);
-                  }}
-                >
-                  +
-                </summary>
-                <form action={createCardAction} className="column-create-form">
-                  <input type="hidden" name="boardId" value={board.id} />
-                  <input type="hidden" name="columnId" value={defaultColumnId} />
-                  <label className="column-create-label" htmlFor="express-card-title">
-                    {labels.cardTitle}
-                  </label>
-                  <input id="express-card-title" name="title" required />
-                  <div className="field" style={{ gap: "6px" }}>
-                    <label htmlFor="express-card-type">{labels.cardType}</label>
-                    <select id="express-card-type" name="cardTypeId" defaultValue={String(defaultExpressTypeId)}>
-                      {expressTypes.map((type) => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="action-row">
-                    <button className="primary-button" type="submit">
-                      {labels.createCard}
-                    </button>
-                    <button className="ghost-button" type="button" onClick={() => setIsExpressCreateOpen(false)}>
-                      {labels.cancel}
-                    </button>
-                  </div>
-                </form>
-              </details>
-            ) : null}
+          <div>
+            <strong>{labels.expressLane}</strong>
+            <p className="board-shell__hint">{labels.urgentOnly}</p>
           </div>
+          {canEdit && defaultColumnId && expressTypes.length > 0 ? (
+            <form action={createCardAction} className="quick-add-form quick-add-form--express">
+              <input type="hidden" name="boardId" value={board.id} />
+              <input type="hidden" name="columnId" value={defaultColumnId} />
+              <input type="hidden" name="cardTypeId" value={String(defaultExpressTypeId)} />
+              <input id="express-card-title" name="title" placeholder={labels.quickAddTask} required />
+              <button className="quick-add-button" type="submit">
+                + {labels.addTask}
+              </button>
+            </form>
+          ) : null}
         </div>
-        <div className="board-columns board-columns--express" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
-          {expressCards.map((card) => (
-            <article key={card.id} className="board-card">
-              <div className="board-card__topline">
-                <span className="board-card__circle">◌</span>
-                <span className="board-card__type">{card.typeName}</span>
-              </div>
-              <strong className="board-card__title">{card.title}</strong>
-              <p className="board-card__details">{card.details}</p>
-            </article>
-          ))}
+        <div className="board-express-scroll">
+          <div className="board-columns board-columns--express">
+            {expressCards.map((card) => (
+              <SortableCard
+                key={card.id}
+                card={card}
+                labels={labels}
+                canEdit={canEdit}
+                onOpen={openEditor}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -696,20 +693,11 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
               <input type="hidden" name="cardId" value={editableCard.id} />
               <div className="field">
                 <label htmlFor="edit-title">{labels.cardTitle}</label>
-                <input
-                  id="edit-title"
-                  name="title"
-                  defaultValue={editor.title}
-                  required
-                />
+                <input id="edit-title" name="title" defaultValue={editor.title} required />
               </div>
               <div className="field">
                 <label htmlFor="edit-details">{labels.cardDetails}</label>
-                <textarea
-                  id="edit-details"
-                  name="details"
-                  defaultValue={editor.details}
-                />
+                <textarea id="edit-details" name="details" defaultValue={editor.details} />
               </div>
               <div className="field">
                 <label htmlFor="edit-card-type">{labels.cardType}</label>
@@ -723,7 +711,11 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
               </div>
               <div className="field">
                 <label htmlFor="edit-assignee">{labels.assignee}</label>
-                <select id="edit-assignee" name="assigneeUserId" defaultValue={editor.assigneeUserId}>
+                <select
+                  id="edit-assignee"
+                  name="assigneeUserId"
+                  defaultValue={editor.assigneeUserId}
+                >
                   <option value="">{labels.unassigned}</option>
                   {board.members.map((member) => (
                     <option key={member.id} value={member.id}>

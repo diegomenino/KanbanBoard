@@ -44,6 +44,8 @@ export default async function BoardPage({ params }: BoardPageProps) {
         roleText: translateRole(board.role, user.preferenceLanguage),
         newCard: dictionary.newCard,
         createCard: dictionary.createCard,
+        addTask: dictionary.addTask,
+        quickAddTask: dictionary.quickAddTask,
         editCard: dictionary.editCard,
         saveCard: dictionary.saveCard,
         deleteCard: dictionary.deleteCard,

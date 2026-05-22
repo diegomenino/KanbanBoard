@@ -233,6 +233,10 @@ export async function updateBoardArrangementAction(input: {
     throw new Error("Unauthorized");
   }
 
+  if (user.role === "READ") {
+    return;
+  }
+
   const payload = boardArrangementSchema.parse(input);
   moveCard({
     boardId: payload.boardId,
@@ -270,6 +274,10 @@ export async function createCardAction(formData: FormData) {
     throw new Error("Unauthorized");
   }
 
+  if (user.role === "READ") {
+    return;
+  }
+
   const payload = createCardSchema.parse({
     boardId: formData.get("boardId"),
     columnId: formData.get("columnId"),
@@ -298,6 +306,10 @@ export async function updateCardAction(formData: FormData) {
 
   if (!user) {
     throw new Error("Unauthorized");
+  }
+
+  if (user.role === "READ") {
+    return;
   }
 
   const payload = updateCardSchema.parse({
@@ -335,6 +347,10 @@ export async function addCommentAction(formData: FormData) {
     throw new Error("Unauthorized");
   }
 
+  if (user.role === "READ") {
+    return;
+  }
+
   const payload = addCommentSchema.parse({
     boardId: formData.get("boardId"),
     cardId: formData.get("cardId"),
@@ -357,6 +373,10 @@ export async function renameColumnAction(formData: FormData) {
 
   if (!user) {
     throw new Error("Unauthorized");
+  }
+
+  if (user.role === "READ") {
+    return;
   }
 
   const payload = renameColumnSchema.parse({
@@ -384,6 +404,10 @@ export async function deleteColumnAction(formData: FormData) {
     throw new Error("Unauthorized");
   }
 
+  if (user.role === "READ") {
+    return;
+  }
+
   const payload = deleteColumnSchema.parse({
     boardId: formData.get("boardId"),
     columnId: formData.get("columnId"),
@@ -405,6 +429,10 @@ export async function createColumnAction(formData: FormData) {
 
   if (!user) {
     throw new Error("Unauthorized");
+  }
+
+  if (user.role === "READ") {
+    return;
   }
 
   const payload = createColumnSchema.parse({
@@ -497,6 +525,10 @@ export async function deleteCardAction(formData: FormData) {
   const user = await getSessionUser();
   if (!user) {
     throw new Error("Unauthorized");
+  }
+
+  if (user.role === "READ") {
+    return;
   }
 
   const payload = z

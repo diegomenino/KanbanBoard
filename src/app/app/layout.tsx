@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/shell/app-sidebar";
 import { ResponsiveAppLayout } from "@/components/shell/responsive-app-layout";
@@ -15,7 +14,6 @@ export default async function AppLayout({
   }
 
   const boards = getBoardsForUser(user.id);
-  const pathname = (await headers()).get("x-pathname") ?? "/app";
   const dictionary = getDictionary(user.preferenceLanguage);
 
   return (
@@ -24,7 +22,6 @@ export default async function AppLayout({
         sidebar={
           <AppSidebar
             boards={boards}
-            pathname={pathname}
             user={user}
             labels={{
               appName: dictionary.appName,

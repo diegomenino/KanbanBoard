@@ -1,4 +1,5 @@
 import { updatePreferencesAction } from "@/app/actions";
+import { APP_RELEASE, getVersionLabel } from "@/lib/app-version";
 import { getDictionary } from "@/lib/i18n";
 import { getSessionUser } from "@/lib/queries";
 
@@ -41,6 +42,16 @@ export default async function SettingsPage() {
           </button>
         </div>
       </form>
+      <section className="settings-version-card">
+        <div>
+          <p className="eyebrow">{dictionary.appVersion}</p>
+          <strong>{getVersionLabel()}</strong>
+        </div>
+        <div>
+          <p className="eyebrow">{dictionary.releaseChannel}</p>
+          <span>{APP_RELEASE}</span>
+        </div>
+      </section>
     </section>
   );
 }

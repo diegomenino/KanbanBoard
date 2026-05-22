@@ -18,7 +18,7 @@ export function ResponsiveAppLayout({ sidebar, children }: ResponsiveAppLayoutPr
           type="button"
           onClick={() => setIsSidebarOpen((current) => !current)}
         >
-          Menu
+          Workspace
         </button>
       </div>
       <main className="app-layout">

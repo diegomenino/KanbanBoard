@@ -2,6 +2,12 @@ import type { UserLanguage, UserRole } from "@/lib/types";
 
 type Dictionary = {
   appName: string;
+  addTask: string;
+  quickAddTask: string;
+  appVersion: string;
+  releaseChannel: string;
+  accountEmail: string;
+  workspaceVisibility: string;
   loggedInAs: string;
   overview: string;
   adminSettings: string;
@@ -109,6 +115,12 @@ type Dictionary = {
 const dictionaries: Record<UserLanguage, Dictionary> = {
   en: {
     appName: "KanbanBoard",
+    addTask: "Add task",
+    quickAddTask: "Quick add a task",
+    appVersion: "App version",
+    releaseChannel: "Release channel",
+    accountEmail: "Account email",
+    workspaceVisibility: "Shared workspace",
     loggedInAs: "Logged in as",
     overview: "Overview",
     adminSettings: "Admin Settings",
@@ -215,6 +227,12 @@ const dictionaries: Record<UserLanguage, Dictionary> = {
   },
   "es-AR": {
     appName: "KanbanBoard",
+    addTask: "Agregar tarea",
+    quickAddTask: "Agregar una tarea rápido",
+    appVersion: "Versión de la app",
+    releaseChannel: "Canal de versión",
+    accountEmail: "Correo de la cuenta",
+    workspaceVisibility: "Espacio compartido",
     loggedInAs: "Sesión iniciada",
     overview: "Resumen",
     adminSettings: "Configuración admin",
