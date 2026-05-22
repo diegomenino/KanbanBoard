@@ -555,42 +555,6 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
             {labels.owner}: {board.ownerName} · {labels.yourRole}: {labels.roleText}
           </p>
         </div>
-        <div className="board-shell__hint">
-          {canEdit ? (
-            <details className="column-create" open={isColumnCreateOpen}>
-              <summary
-                className="primary-button"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setIsColumnCreateOpen((current) => !current);
-                }}
-              >
-                + {labels.addColumn}
-              </summary>
-              <form action={createColumnAction} className="column-create-form" style={{ marginLeft: "auto" }}>
-                <input type="hidden" name="boardId" value={board.id} />
-                <label className="column-create-label" htmlFor="new-column-name">
-                  {labels.columnName}
-                </label>
-                <input id="new-column-name" name="name" required />
-                <div className="action-row">
-                  <button className="primary-button" type="submit">
-                    {labels.addColumn}
-                  </button>
-                  <button
-                    className="ghost-button"
-                    type="button"
-                    onClick={() => setIsColumnCreateOpen(false)}
-                  >
-                    {labels.cancel}
-                  </button>
-                </div>
-              </form>
-            </details>
-          ) : (
-            labels.readOnlyAccess
-          )}
-        </div>
       </div>
 
       <div className="board-express-lane board-express-lane--compact">
@@ -626,35 +590,48 @@ export function BoardView({ board, canEdit, labels }: BoardViewProps) {
         </div>
       </div>
 
+      <div className="board-columns-actions">
+        <div className="board-shell__hint">{canEdit ? null : labels.readOnlyAccess}</div>
+        {canEdit ? (
+          <details className="column-create" open={isColumnCreateOpen}>
+            <summary
+              className="primary-button"
+              onClick={(event) => {
+                event.preventDefault();
+                setIsColumnCreateOpen((current) => !current);
+              }}
+            >
+              + {labels.addColumn}
+            </summary>
+            <form action={createColumnAction} className="column-create-form" style={{ marginLeft: "auto" }}>
+              <input type="hidden" name="boardId" value={board.id} />
+              <label className="column-create-label" htmlFor="new-column-name">
+                {labels.columnName}
+              </label>
+              <input id="new-column-name" name="name" required />
+              <div className="action-row">
+                <button className="primary-button" type="submit">
+                  {labels.addColumn}
+                </button>
+                <button
+                  className="ghost-button"
+                  type="button"
+                  onClick={() => setIsColumnCreateOpen(false)}
+                >
+                  {labels.cancel}
+                </button>
+              </div>
+            </form>
+          </details>
+        ) : null}
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={(event) => setActiveCardId(Number(event.active.id))}
         onDragEnd={onDragEnd}
       >
-        <div className="board-columns-toolbar">
-          <p className="board-columns-hint">{labels.scrollColumnsHint}</p>
-          <div className="inline-actions">
-            <button
-              className="board-scroll-button"
-              type="button"
-              aria-label={labels.scrollColumnsLeft}
-              disabled={!canScrollLeft}
-              onClick={() => scrollColumns("left")}
-            >
-              ←
-            </button>
-            <button
-              className="board-scroll-button"
-              type="button"
-              aria-label={labels.scrollColumnsRight}
-              disabled={!canScrollRight}
-              onClick={() => scrollColumns("right")}
-            >
-              →
-            </button>
-          </div>
-        </div>
         <div ref={columnsScrollRef} className="board-columns-scroll">
           <div className="board-columns board-columns--kanban">
             {board.columns.map((column) => (
